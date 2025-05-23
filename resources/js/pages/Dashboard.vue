@@ -4,10 +4,38 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { computed } from 'vue';
-import { Users, Activity, UserPlus, FileText } from 'lucide-vue-next';
+import { Users, Activity, UserPlus, FileText, ActivitySquare } from 'lucide-vue-next';
+import { PageProps as InertiaPageProps } from '@inertiajs/core';
+
+interface UserRole {
+    name: string;
+}
+
+interface User {
+    roles: UserRole[];
+}
+
+interface Organization {
+    name: string;
+}
+
+interface Stats {
+    patientCount: number;
+    measureCount: number;
+    userCount: number;
+    recentActivityCount: number;
+}
+
+interface PageProps extends InertiaPageProps {
+    auth: {
+        user: User;
+    };
+    organization: Organization;
+    stats: Stats;
+}
 
 // Get current user and organization
-const page = usePage();
+const page = usePage<PageProps>();
 const user = computed(() => page.props.auth?.user);
 const organization = computed(() => page.props.organization);
 const stats = computed(() => page.props.stats || {});
@@ -94,6 +122,11 @@ const isAdmin = computed(() => {
                         href="/measures/create">
                         <Activity class="h-6 w-6" />
                         <span>Record Measurement</span>
+                    </Button>
+
+                    <Button class="h-auto flex-col items-center justify-center gap-2 p-4" as="a" href="/body-map">
+                        <ActivitySquare class="h-6 w-6" />
+                        <span>Body Measurement Map</span>
                     </Button>
 
                     <Button v-if="isAdmin" class="h-auto flex-col items-center justify-center gap-2 p-4" as="a"

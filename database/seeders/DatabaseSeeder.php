@@ -94,5 +94,8 @@ class DatabaseSeeder extends Seeder
                 'organization_id' => $organization2->id,
             ]);
         }
+
+        // Run the measures seeder to add measures for the patients
+        $this->call(MeasuresSeeder::class);
     }
 }

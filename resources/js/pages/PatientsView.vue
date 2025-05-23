@@ -6,43 +6,70 @@ import { Button } from '@/components/ui/button';
 import { type BreadcrumbItem } from '@/types';
 import { computed, onMounted, ref } from 'vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
+import { ActivitySquare } from 'lucide-vue-next';
 
-const props = defineProps({
-    patients: Array,
-});
+interface Patient {
+    id: number;
+    name: string;
+    last_name: string;
+    gender: string;
+    age: number;
+}
 
+interface UserPermission {
+    name: string;
+}
 
-const deleteConfirmDialog = ref(null);
-const patientToDelete = ref(null);
+interface UserRole {
+    name: string;
+}
 
-const page = usePage();
-const user = page.props.auth?.user;
+interface User {
+    permissions: UserPermission[];
+    roles: UserRole[];
+}
 
+interface PageProps {
+    auth: {
+        user: User;
+    };
+    [key: string]: any;
+}
+
+const props = defineProps<{
+    patients: Patient[];
+}>();
+
+const deleteConfirmDialog = ref<any>(null);
+const patientToDelete = ref<Patient | null>(null);
+
+const page = usePage<PageProps>();
+const user = computed(() => page.props.auth?.user);
 
 onMounted(() => {
-    console.log('User:', user);
-    console.log('User permissions:', user?.permissions);
-    console.log('User roles:', user?.roles);
+    console.log('User:', user.value);
+    console.log('User permissions:', user.value?.permissions);
+    console.log('User roles:', user.value?.roles);
     console.log('Has delete-patient permission:', canDelete.value);
 });
 
-// Check
+// Check permissions
 const canCreate = computed(() => {
-    if (!user?.permissions) return false;
-    return user.permissions.some(p => p.name === 'create-patient');
+    if (!user.value?.permissions) return false;
+    return user.value.permissions.some(p => p.name === 'create-patient');
 });
 
 const canEdit = computed(() => {
-    if (!user?.permissions) return false;
-    return user.permissions.some(p => p.name === 'edit-patient');
+    if (!user.value?.permissions) return false;
+    return user.value.permissions.some(p => p.name === 'edit-patient');
 });
 
 const canDelete = computed(() => {
-    if (!user?.permissions) return false;
+    if (!user.value?.permissions) return false;
     // Check both the specific permission and if user has the admin role
-    return user.permissions.some(p => p.name === 'delete-patient') ||
-        user.roles.some(r => r.name === 'admin') ||
-        user.roles.some(r => r.name === 'medic'); // Also allow medics
+    return user.value.permissions.some(p => p.name === 'delete-patient') ||
+        user.value.roles.some(r => r.name === 'admin') ||
+        user.value.roles.some(r => r.name === 'medic'); // Also allow medics
 });
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -53,29 +80,27 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 // Show the delete confirmation dialog
-function confirmDeletePatient(patient) {
+function confirmDeletePatient(patient: Patient): void {
     patientToDelete.value = patient;
-    deleteConfirmDialog.value.open();
+    if (deleteConfirmDialog.value) {
+        deleteConfirmDialog.value.open();
+    }
 }
 
 // Delete the patient after confirmation
-function deletePatient() {
+function deletePatient(): void {
     if (!patientToDelete.value) return;
 
-    router.delete(`/patients/${patientToDelete.value.id}`, {}, {
-        onSuccess: () => {
-            console.log('Delete successful');
-            // The page will automatically refresh due to Inertia
-        },
-        onError: (errors) => {
-            console.error('Delete failed:', errors);
-            alert('Failed to delete patient. Please try again.');
-        }
-    });
+    router.delete(`/patients/${patientToDelete.value.id}`, {});
 }
 
-function editPatient(id) {
+function editPatient(id: number): void {
     router.get(`/patients/${id}/edit`);
+}
+
+// Navigate to body map for a patient
+function navigateToBodyMap(id: number): void {
+    router.get(`/body-map/${id}`);
 }
 </script>
 
@@ -109,6 +134,10 @@ function editPatient(id) {
                             <td class="px-4 py-3 text-sm">{{ patient.age }}</td>
                             <td class="px-4 py-3 text-sm">
                                 <div class="flex items-center gap-2">
+                                    <Button variant="outline" size="sm" @click="navigateToBodyMap(patient.id)">
+                                        <ActivitySquare class="h-4 w-4 mr-1" />
+                                        Body Map
+                                    </Button>
                                     <Button v-if="canEdit" variant="outline" size="sm"
                                         @click="editPatient(patient.id)">Edit</Button>
                                     <Button v-if="canDelete" variant="destructive" size="sm"

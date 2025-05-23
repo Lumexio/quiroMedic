@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\BodyMapController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
@@ -39,6 +40,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/users/{id}', [\App\Http\Controllers\UserController::class, 'delete'])->name('users.delete');
         Route::get('/users/{id}', [\App\Http\Controllers\UserController::class, 'show'])->name('users.show');
     });
+
+    // Body Map routes
+    Route::get('/body-map', [BodyMapController::class, 'index'])->name('body-map.index');
+    Route::get('/body-map/{patient}', [BodyMapController::class, 'show'])->name('body-map.show');
 });
 
 require __DIR__ . '/settings.php';

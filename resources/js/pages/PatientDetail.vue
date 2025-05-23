@@ -4,11 +4,19 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
 import { type BreadcrumbItem } from '@/types';
 import { patientsService } from '@/services/CrudService';
-import { ArrowLeft, Pencil, Plus } from 'lucide-vue-next';
+import { ArrowLeft, Pencil, Plus, ActivitySquare } from 'lucide-vue-next';
+
+interface Measure {
+    id: number;
+    name: string;
+    body_zone: string;
+    value: number;
+    unit: string;
+}
 
 const props = defineProps({
     patient: Object,
-    measures: Array,
+    measures: Array<Measure>,
 });
 
 // Navigation breadcrumbs
@@ -19,7 +27,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
     {
         title: 'Patient Details',
-        href: `/patients/${props.patient.id}`,
+        href: `/patients/${props?.patient?.id}`,
     },
 ];
 
@@ -30,19 +38,24 @@ function goBack() {
 
 // Navigate to edit patient page
 function editPatient() {
-    patientsService.navigateToEdit(props.patient.id);
+    patientsService.navigateToEdit(props?.patient?.id);
 }
 
 // Navigate to create measure page with patient preselected
 function addMeasure() {
-    window.location.href = `/measures/create?patient=${props.patient.id}`;
+    window.location.href = `/measures/create?patient=${props?.patient?.id}`;
+}
+
+// Navigate to the body measurement map
+function goToBodyMap() {
+    window.location.href = `/body-map/${props?.patient?.id}`;
 }
 </script>
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbs">
 
-        <Head :title="`Patient: ${patient.name} ${patient.last_name}`" />
+        <Head :title="`Patient: ${props?.patient?.name} ${props?.patient?.last_name}`" />
 
         <div class="container p-4">
             <div class="mb-6 flex items-center justify-between">
@@ -50,9 +63,13 @@ function addMeasure() {
                     <Button variant="outline" size="icon" @click="goBack">
                         <ArrowLeft class="h-4 w-4" />
                     </Button>
-                    <h1 class="text-2xl font-bold">{{ patient.name }} {{ patient.last_name }}</h1>
+                    <h1 class="text-2xl font-bold">{{ props?.patient?.name }} {{ props?.patient?.last_name }}</h1>
                 </div>
                 <div class="flex gap-2">
+                    <Button variant="outline" @click="goToBodyMap">
+                        <ActivitySquare class="mr-2 h-4 w-4" />
+                        Body Map
+                    </Button>
                     <Button variant="outline" @click="editPatient">
                         <Pencil class="mr-2 h-4 w-4" />
                         Edit Patient
@@ -72,22 +89,22 @@ function addMeasure() {
                     <div class="space-y-3">
                         <div>
                             <p class="text-sm font-medium text-muted-foreground">Name</p>
-                            <p class="text-base">{{ patient.name }} {{ patient.last_name }}</p>
+                            <p class="text-base">{{ props?.patient?.name }} {{ props?.patient?.last_name }}</p>
                         </div>
 
                         <div>
                             <p class="text-sm font-medium text-muted-foreground">Gender</p>
-                            <p class="text-base">{{ patient.gender }}</p>
+                            <p class="text-base">{{ props?.patient?.gender }}</p>
                         </div>
 
                         <div>
                             <p class="text-sm font-medium text-muted-foreground">Age</p>
-                            <p class="text-base">{{ patient.age }} years</p>
+                            <p class="text-base">{{ props?.patient?.age }} years</p>
                         </div>
 
                         <div>
                             <p class="text-sm font-medium text-muted-foreground">Weight</p>
-                            <p class="text-base">{{ patient.weight }} kg</p>
+                            <p class="text-base">{{ props?.patient?.weight }} kg</p>
                         </div>
                     </div>
                 </div>
@@ -99,17 +116,17 @@ function addMeasure() {
                     <div class="space-y-3">
                         <div>
                             <p class="text-sm font-medium text-muted-foreground">Education</p>
-                            <p class="text-base">{{ patient.education }}</p>
+                            <p class="text-base">{{ props?.patient?.education }}</p>
                         </div>
 
                         <div>
                             <p class="text-sm font-medium text-muted-foreground">Sport/Activity</p>
-                            <p class="text-base">{{ patient.sport }}</p>
+                            <p class="text-base">{{ props?.patient?.sport }}</p>
                         </div>
 
                         <div>
                             <p class="text-sm font-medium text-muted-foreground">Rest Hours</p>
-                            <p class="text-base">{{ patient.rest_hours }} hours/day</p>
+                            <p class="text-base">{{ props?.patient?.rest_hours }} hours/day</p>
                         </div>
                     </div>
                 </div>
@@ -118,8 +135,8 @@ function addMeasure() {
                 <div class="rounded-lg border p-4 shadow-sm">
                     <h2 class="text-xl font-semibold mb-4">Recent Measurements</h2>
 
-                    <div v-if="measures && measures.length > 0" class="space-y-2">
-                        <div v-for="measure in measures.slice(0, 5)" :key="measure.id"
+                    <div v-if="props?.measures && props?.measures?.length > 0" class="space-y-2">
+                        <div v-for="measure in props?.measures?.slice(0, 5)" :key="measure.id"
                             class="rounded border p-2 hover:bg-muted/50">
                             <p class="font-medium">{{ measure.name }}</p>
                             <p class="text-sm text-muted-foreground">
@@ -130,7 +147,7 @@ function addMeasure() {
                             </Button>
                         </div>
 
-                        <Button v-if="measures.length > 5" variant="outline" as="a" href="/measures"
+                        <Button v-if="props?.measures?.length > 5" variant="outline" as="a" href="/measures"
                             class="w-full mt-2">
                             View all measurements
                         </Button>

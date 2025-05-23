@@ -44,3 +44,4 @@ export class CrudService {
 export const usersService = new CrudService('users');
 export const patientsService = new CrudService('patients');
 export const measuresService = new CrudService('measures');
+export const bodyMapService = new CrudService('body-map');

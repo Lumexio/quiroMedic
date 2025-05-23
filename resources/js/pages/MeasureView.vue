@@ -7,31 +7,63 @@ import { computed, ref } from 'vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import { measuresService } from '@/services/CrudService';
 
-const props = defineProps({
-    measures: Array,
-});
+// Define TypeScript interfaces for our data
+interface Measure {
+    id: number;
+    name: string;
+    body_zone: string;
+    value: number;
+    unit: string;
+    image_path?: string;
+    patient_id: number;
+    patient_name: string;
+}
+
+interface UserPermission {
+    name: string;
+}
+
+interface UserRole {
+    name: string;
+}
+
+interface User {
+    permissions: UserPermission[];
+    roles: UserRole[];
+}
+
+interface PageProps {
+    auth: {
+        user: User;
+    };
+    [key: string]: any;
+}
+
+const props = defineProps<{
+    measures?: Measure[];
+}>();
 
 // Create refs for the confirmation dialog and the item to delete
-const deleteConfirmDialog = ref(null);
-const measureToDelete = ref(null);
+const deleteConfirmDialog = ref<{ open: () => void } | null>(null);
+const measureToDelete = ref<Measure | null>(null);
 
-const page = usePage();
-const user = page.props.auth?.user;
+const page = usePage<PageProps>();
+const user = computed(() => page.props.auth?.user);
 
 // Check if the user has specific permissions
 const canCreate = computed(() => {
-    if (!user?.permissions) return false;
-    return user.permissions.some(p => p.name === 'create-measure');
+    if (!user.value?.permissions) return false;
+    return user.value.permissions.some((p: UserPermission) => p.name === 'create-measure');
 });
 
 const canEdit = computed(() => {
-    if (!user?.permissions) return false;
-    return user.permissions.some(p => p.name === 'edit-measure');
+    if (!user.value?.permissions) return false;
+    return user.value.permissions.some((p: UserPermission) => p.name === 'edit-measure');
 });
 
 const canDelete = computed(() => {
-    if (!user?.permissions) return false;
-    return user.permissions.some(p => p.name === 'delete-measure');
+    if (!user.value?.permissions) return false;
+    return user.value.permissions.some((p: UserPermission) => p.name === 'delete-measure');
 });
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -42,33 +74,38 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 // Function to get full image URL
-function getImageUrl(path) {
+function getImageUrl(path?: string): string | null {
     if (!path) return null;
     return `/storage/${path}`;
 }
 
 // Show the delete confirmation dialog
-function confirmDeleteMeasure(measure) {
+function confirmDeleteMeasure(measure: Measure): void {
     measureToDelete.value = measure;
-    deleteConfirmDialog.value.open();
+    deleteConfirmDialog.value?.open();
 }
 
 // Delete the measure after confirmation
-function deleteMeasure() {
+function deleteMeasure(): void {
     if (!measureToDelete.value) return;
     measuresService.delete(measureToDelete.value.id, {
         onSuccess: () => {
             console.log('Delete successful');
         },
-        onError: (errors) => {
+        onError: (errors: any) => {
             console.error('Delete failed:', errors);
             alert('Failed to delete measure. Please try again.');
         }
     });
 }
 
-function editMeasure(id) {
+function editMeasure(id: number): void {
     measuresService.navigateToEdit(id);
+}
+
+// Safe image open function
+function openImageInNewTab(url: string | null): void {
+    if (url) window.open(url, '_blank');
 }
 </script>
 
@@ -106,13 +143,18 @@ function editMeasure(id) {
                             <td class="px-4 py-3 text-sm">{{ measure.unit }}</td>
                             <td class="px-4 py-3 text-sm">
                                 <div v-if="measure.image_path" class="h-10 w-10 rounded-md overflow-hidden">
-                                    <img :src="getImageUrl(measure.image_path)" alt="Body image"
+                                    <img :src="getImageUrl(measure.image_path) || undefined" alt="Body image"
                                         class="h-full w-full object-cover cursor-pointer"
-                                        @click="() => window.open(getImageUrl(measure.image_path), '_blank')" />
+                                        @click="openImageInNewTab(getImageUrl(measure.image_path))" />
                                 </div>
                                 <span v-else>No image</span>
                             </td>
-                            <td class="px-4 py-3 text-sm">{{ measure.patient_id }}</td>
+                            <td class="px-4 py-3 text-sm">
+                                <!-- Display patient name instead of ID -->
+                                <a :href="`/patients/${measure.patient_id}`" class="hover:underline text-primary">
+                                    {{ measure.patient_name }}
+                                </a>
+                            </td>
                             <td class="px-4 py-3 text-sm">
                                 <div class="flex items-center gap-2">
                                     <Button v-if="canEdit" variant="outline" size="sm"

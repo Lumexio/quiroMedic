@@ -17,8 +17,28 @@ class MeasureController extends Controller
     public function index()
     {
         // Only fetch measures from the current user's organization
+        // Include the patient relationship to access patient names
         $currentUser = Auth::user();
-        $measures = Measure::inOrganization($currentUser->organization_id)->get();
+        $measures = Measure::with('patient')
+            ->inOrganization($currentUser->organization_id)
+            ->get()
+            ->map(function ($measure) {
+                // Format the data to include patient name
+                return [
+                    'id' => $measure->id,
+                    'name' => $measure->name,
+                    'body_zone' => $measure->body_zone,
+                    'value' => $measure->value,
+                    'unit' => $measure->unit,
+                    'image_path' => $measure->image_path,
+                    'description' => $measure->description,
+                    'patient_id' => $measure->patient_id,
+                    'created_at' => $measure->created_at,
+                    'updated_at' => $measure->updated_at,
+                    // Add patient name information
+                    'patient_name' => $measure->patient ? "{$measure->patient->name} {$measure->patient->last_name}" : 'Unknown Patient',
+                ];
+            });
 
         return Inertia::render('MeasureView', [
             'measures' => $measures,
@@ -26,7 +46,7 @@ class MeasureController extends Controller
     }
 
     /**
-     * Create a new measure with pre-selected patient.
+     * Create a new measure with pre-selected patient and body zone.
      */
     public function create(Request $request)
     {
@@ -34,12 +54,14 @@ class MeasureController extends Controller
         $currentUser = Auth::user();
         $patients = Patient::inOrganization($currentUser->organization_id)->get();
 
-        // Check if a patient ID was provided in the query string
+        // Check if a patient ID and body zone were provided in the query string
         $selectedPatientId = $request->query('patient');
+        $bodyZone = $request->query('body_zone');
 
         return Inertia::render('CreateMeasure', [
             'patients' => $patients,
             'selectedPatientId' => $selectedPatientId,
+            'bodyZone' => $bodyZone,
         ]);
     }
 

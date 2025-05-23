@@ -9,26 +9,45 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { type BreadcrumbItem } from '@/types';
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 
-const props = defineProps({
-    patients: Array,
-    selectedPatientId: [String, Number], // New prop for pre-selected patient
-});
+interface Patient {
+    id: number;
+    name: string;
+    last_name: string;
+}
+
+const props = defineProps<{
+    patients?: Patient[];
+    selectedPatientId?: string | number;
+    bodyZone?: string;
+}>();
 
 // Preview for image upload
 const imagePreview = ref<string | null>(null);
 const imageFile = ref<File | null>(null);
 
-// Initialize form with empty values or pre-selected patient
-const form = ref({
+// Form object interface with index signature
+interface FormData {
+    name: string;
+    body_zone: string;
+    value: string;
+    unit: string;
+    patient_id: string | number;
+    description: string;
+    image: File | null;
+    [key: string]: string | number | File | null;
+}
+
+// Initialize form with empty values or pre-selected values
+const form = ref<FormData>({
     name: '',
-    body_zone: '',
+    body_zone: props.bodyZone || '',
     value: '',
     unit: '',
     patient_id: props.selectedPatientId || '',
     description: '',
-    image: null as File | null,
+    image: null,
 });
 
 // Navigation breadcrumbs
@@ -43,9 +62,15 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+// Set form title based on body zone if provided
+const pageTitle = props.bodyZone
+    ? `New ${props.bodyZone} Measurement`
+    : 'Create New Measure';
+
 // Handle image selection
-function onImageSelected(event) {
-    const file = event.target.files[0];
+function onImageSelected(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
     if (file) {
         form.value.image = file;
         imageFile.value = file;
@@ -53,13 +78,21 @@ function onImageSelected(event) {
     }
 }
 
+// Suggest a measure name based on body zone
+onMounted(() => {
+    if (props.bodyZone) {
+        form.value.name = `${props.bodyZone} measurement`;
+    }
+});
+
 // Submit the form to create measure
-function submit() {
+function submit(): void {
     // Use FormData to handle file uploads
     const formData = new FormData();
     Object.keys(form.value).forEach(key => {
-        if (form.value[key] !== null) {
-            formData.append(key, form.value[key]);
+        const value = form.value[key];
+        if (value !== null) {
+            formData.append(key, value as string | Blob);
         }
     });
 
@@ -69,7 +102,7 @@ function submit() {
 }
 
 // Cancel and return to measures list
-function cancel() {
+function cancel(): void {
     router.get('/measures');
 }
 </script>
@@ -82,7 +115,7 @@ function cancel() {
         <div class="container p-4">
             <Card>
                 <CardHeader>
-                    <CardTitle>Create New Measure</CardTitle>
+                    <CardTitle>{{ pageTitle }}</CardTitle>
                     <CardDescription>
                         Enter details for the new body measurement
                     </CardDescription>
@@ -117,9 +150,9 @@ function cancel() {
                                         <SelectValue placeholder="Select patient" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem v-for="patient in props.patients" :key="patient.id"
-                                            :value="patient.id">
-                                            {{ patient.name }} {{ patient.last_name }}
+                                        <SelectItem v-for="patient in props.patients" :key="patient?.id"
+                                            :value="patient?.id">
+                                            {{ patient?.name }} {{ patient?.last_name }}
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -127,7 +160,7 @@ function cancel() {
 
                             <div class="space-y-2 md:col-span-2">
                                 <Label for="description">Description</Label>
-                                <Textarea id="description" v-model="form.description" rows="3" />
+                                <Textarea id="description" v-model="form.description" :rows="3" />
                             </div>
 
                             <div class="space-y-2 md:col-span-2">
