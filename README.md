@@ -2,7 +2,9 @@
 
 QuiroMedic is a multi-tenant web application designed for ergonomists and chiropractic practitioners to register and track patient body measurements. It enables medical professionals to manage patients and record precise measurements for different body zones, making it easy to track progress over time.
 
-![QuiroMedic Dashboard](https://example.com/dashboard-screenshot.png)
+![ezgif-3bc721dc456d02](https://github.com/user-attachments/assets/b0207c81-d374-43e6-8156-34352dbc2ad8)
+
+
 
 ## Features
 
